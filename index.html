@@ -1,25 +1,37 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Student Performance ML Trainer</title>
+
 <style>
 * { box-sizing: border-box; }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #f3f6fc;
   color: #1f2937;
+  line-height: 1.5;
 }
+
 header {
   background: #243b80;
   color: white;
   text-align: center;
   padding: 28px 15px;
 }
+
 header h1 { margin: 0 0 8px; }
-main { max-width: 950px; margin: 25px auto; padding: 0 15px; }
+
+main {
+  max-width: 950px;
+  margin: 25px auto;
+  padding: 0 15px;
+}
+
 .card {
   background: white;
   padding: 22px;
@@ -27,63 +39,157 @@ main { max-width: 950px; margin: 25px auto; padding: 0 15px; }
   border-radius: 12px;
   box-shadow: 0 3px 14px #0000000d;
 }
+
 h2 { color: #243b80; margin-top: 0; }
-label { display: block; font-weight: bold; margin: 13px 0 6px; }
+
+label {
+  display: block;
+  font-weight: bold;
+  margin: 13px 0 6px;
+}
+
 input, select, button {
+  font-family: inherit;
+  font-size: 15px;
+  max-width: 100%;
+}
+
+input[type="file"], input[type="text"], select {
   width: 100%;
   padding: 11px;
   border: 1px solid #ccd3e0;
   border-radius: 7px;
-  font-size: 15px;
+  background: white;
 }
+
 button {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 7px;
   background: #3155b8;
   color: white;
-  border: 0;
   cursor: pointer;
   margin-top: 15px;
   font-weight: bold;
 }
+
 button:hover { background: #243b80; }
-#status, #metrics, #prediction { margin-top: 15px; white-space: pre-wrap; }
-.columns { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 15px; }
-#features label { font-weight: normal; margin: 8px 0; }
-#features input { width: auto; margin-right: 8px; }
-table { border-collapse: collapse; width: 100%; margin-top: 12px; display: block; overflow-x: auto; }
-th, td { border: 1px solid #dce2ed; padding: 8px; text-align: left; }
-th { background: #edf1fa; }
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+}
+
+#features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#features label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #dce2ed;
+  border-radius: 7px;
+  overflow-wrap: anywhere;
+}
+
+#features input {
+  width: auto;
+  flex-shrink: 0;
+}
+
+#status, #metrics, #prediction {
+  margin-top: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.result {
+  background: #f1f5ff;
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
 .note { color: #64748b; font-size: 14px; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 12px;
+  overflow-x: auto;
+}
+
+.table-wrap { overflow-x: auto; }
+
+th, td {
+  border: 1px solid #dce2ed;
+  padding: 8px;
+  text-align: left;
+}
+
+th { background: #edf1fa; }
+
+.error { color: #b91c1c; }
+.success { color: #166534; }
+
+footer {
+  text-align: center;
+  color: #64748b;
+  padding: 15px;
+  font-size: 13px;
+}
 </style>
 </head>
+
 <body>
 <header>
   <h1>Student Performance ML Trainer</h1>
-  <p>Upload your CSV, train a machine learning model, and make predictions.</p>
+  <p>Train a machine learning model to predict students' final marks.</p>
 </header>
+
 <main>
 <section class="card">
   <h2>1. Upload Dataset</h2>
-  <p class="note">Upload a CSV file containing at least two columns and five valid rows.</p>
+  <p class="note">
+    Upload a CSV file with at least two columns and five valid rows.
+  </p>
+
   <input type="file" id="csvFile" accept=".csv">
-  <button onclick="uploadCSV()">Upload CSV</button>
-  <div id="status"></div>
+  <button id="uploadBtn" onclick="uploadCSV()">Upload CSV</button>
+
+  <div id="status" role="status"></div>
   <div id="preview"></div>
 </section>
 
 <section class="card">
   <h2>2. Configure and Train Model</h2>
+
   <div class="columns">
     <div>
       <label for="task">Problem type</label>
       <select id="task">
-        <option value="regression">Regression (predict numbers)</option>
+        <option value="regression">Regression (predict marks/numbers)</option>
         <option value="classification">Classification (predict categories)</option>
       </select>
     </div>
+
     <div>
-      <label for="target">Target column</label>
-      <select id="target"><option value="">Upload a CSV first</option></select>
+      <label for="target">Target column to predict</label>
+      <select id="target" disabled>
+        <option value="">Upload a CSV first</option>
+      </select>
     </div>
+
     <div>
       <label for="testSize">Test data percentage</label>
       <select id="testSize">
@@ -93,140 +199,388 @@ th { background: #edf1fa; }
       </select>
     </div>
   </div>
+
   <label>Feature columns (input variables)</label>
+  <p class="note">
+    Select the information the model should use to predict final marks.
+    The target column cannot be used as an input.
+  </p>
+
   <div id="features">Upload a CSV to select columns.</div>
-  <button onclick="trainModel()">Train Random Forest Model</button>
-  <div id="metrics"></div>
+
+  <button id="trainBtn" onclick="trainModel()">Train Random Forest Model</button>
+  <div id="metrics" role="status"></div>
 </section>
 
 <section class="card">
-  <h2>3. Make a Prediction</h2>
-  <p class="note">After training, enter values for each selected feature.</p>
-  <div id="predictionInputs"></div>
-  <button onclick="predictValue()">Predict</button>
-  <div id="prediction"></div>
+  <h2>3. Predict Final Marks</h2>
+  <p class="note">
+    Enter a student's study hours, previous marks and attendance.
+    The model will estimate final marks.
+  </p>
+
+  <div id="predictionInputs">
+    Train a model first to display the input fields.
+  </div>
+
+  <button id="predictBtn" onclick="predictValue()" disabled>Predict Final Marks</button>
+  <div id="prediction" role="status"></div>
 </section>
 </main>
+
+<footer>Student Performance ML Trainer | Random Forest</footer>
 
 <script>
 let columns = [];
 let previewRows = [];
 let trainedFeatures = [];
+let trainedTarget = "";
+let isTrained = false;
 
-async function uploadCSV() {
-  const file = document.getElementById("csvFile").files[0];
-  if (!file) {
-    document.getElementById("status").textContent = "Please select a CSV file.";
-    return;
-  }
-  const form = new FormData();
-  form.append("file", file);
-  document.getElementById("status").textContent = "Uploading...";
-  try {
-    const response = await fetch("/upload", {method: "POST", body: form});
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Upload failed");
-    columns = data.columns;
-    previewRows = data.preview || [];
-    document.getElementById("status").textContent =
-      `Uploaded: ${data.filename}\nRows: ${data.rows}\nColumns: ${columns.join(", ")}`;
-    document.getElementById("target").innerHTML = columns.map(
-      c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`
-    ).join("");
-    renderFeatures();
-    renderPreview();
-  } catch (error) {
-    document.getElementById("status").textContent = "Error: " + error.message;
-  }
-}
+const $ = id => document.getElementById(id);
 
 function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, c => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  })[c]);
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
+
+function showError(element, message) {
+  element.className = "error";
+  element.textContent = message;
+}
+
+function showSuccess(element, message) {
+  element.className = "success";
+  element.textContent = message;
+}
+
+function resetTraining() {
+  isTrained = false;
+  trainedFeatures = [];
+  trainedTarget = "";
+  $("metrics").textContent = "";
+  $("prediction").textContent = "";
+  $("predictionInputs").textContent = "Train a model first.";
+  $("predictBtn").disabled = true;
+}
+
+async function uploadCSV() {
+  const file = $("csvFile").files[0];
+
+  if (!file) {
+    showError($("status"), "Please select a CSV file first.");
+    return;
+  }
+
+  const form = new FormData();
+  form.append("file", file);
+
+  $("uploadBtn").disabled = true;
+  $("status").textContent = "Uploading CSV...";
+  $("preview").innerHTML = "";
+  resetTraining();
+
+  try {
+    const response = await fetch("/upload", {
+      method: "POST",
+      body: form
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "CSV upload failed.");
+    }
+
+    columns = data.columns;
+    previewRows = data.preview || [];
+
+    if (!columns || columns.length < 2) {
+      throw new Error("The CSV must contain at least two columns.");
+    }
+
+    $("status").className = "success";
+    $("status").textContent =
+      `Uploaded: ${data.filename}\n` +
+      `Rows: ${data.rows}\n` +
+      `Columns: ${columns.join(", ")}`;
+
+    const targetSelect = $("target");
+    targetSelect.innerHTML = "";
+
+    columns.forEach(column => {
+      const option = document.createElement("option");
+      option.value = column;
+      option.textContent = column;
+      targetSelect.appendChild(option);
+    });
+
+    // Predict final marks by default when that column exists.
+    targetSelect.value = columns.includes("final_marks")
+      ? "final_marks"
+      : columns[columns.length - 1];
+
+    targetSelect.disabled = false;
+
+    renderFeatures();
+    renderPreview();
+
+  } catch (error) {
+    showError($("status"), "Upload error: " + error.message);
+  } finally {
+    $("uploadBtn").disabled = false;
+  }
+}
+
+$("target").addEventListener("change", () => {
+  renderFeatures();
+  resetTraining();
+});
 
 function renderFeatures() {
-  const target = document.getElementById("target").value;
-  document.getElementById("features").innerHTML = columns.map(c =>
-    `<label><input type="checkbox" value="${escapeHTML(c)}"
-      ${c !== target ? "checked" : ""}
-      ${c === target ? "disabled" : ""}>${escapeHTML(c)}</label>`
-  ).join("");
-}
+  const target = $("target").value;
+  const container = $("features");
+  container.innerHTML = "";
 
-document.getElementById("target").addEventListener("change", renderFeatures);
+  columns.forEach(column => {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+
+    checkbox.type = "checkbox";
+    checkbox.value = column;
+    checkbox.checked = column !== target;
+    checkbox.disabled = column === target;
+
+    checkbox.addEventListener("change", resetTraining);
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(column));
+    container.appendChild(label);
+  });
+}
 
 function renderPreview() {
   if (!previewRows.length) return;
-  const heads = columns.map(c => `<th>${escapeHTML(c)}</th>`).join("");
-  const rows = previewRows.map(row =>
-    "<tr>" + columns.map(c => `<td>${escapeHTML(row[c] ?? "")}</td>`).join("") + "</tr>"
-  ).join("");
-  document.getElementById("preview").innerHTML =
-    `<h3>First ${previewRows.length} rows</h3><table><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "table-wrap";
+
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  columns.forEach(column => {
+    const th = document.createElement("th");
+    th.textContent = column;
+    headRow.appendChild(th);
+  });
+
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  previewRows.forEach(row => {
+    const tr = document.createElement("tr");
+
+    columns.forEach(column => {
+      const td = document.createElement("td");
+      td.textContent = row[column] ?? "";
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+
+  const heading = document.createElement("h3");
+  heading.textContent = `First ${previewRows.length} rows`;
+
+  $("preview").replaceChildren(heading, wrapper);
 }
 
 async function trainModel() {
-  const target = document.getElementById("target").value;
-  trainedFeatures = [...document.querySelectorAll("#features input:checked")].map(x => x.value);
-  if (!target || !trainedFeatures.length) {
-    document.getElementById("metrics").textContent = "Select a target and at least one feature.";
+  const target = $("target").value;
+
+  const selectedFeatures = [
+    ...document.querySelectorAll("#features input:checked")
+  ].map(input => input.value);
+
+  if (!target) {
+    showError($("metrics"), "Please select a target column.");
     return;
   }
+
+  if (selectedFeatures.length === 0) {
+    showError($("metrics"), "Select at least one feature column.");
+    return;
+  }
+
+  if (selectedFeatures.includes(target)) {
+    showError($("metrics"), "Target cannot also be a feature.");
+    return;
+  }
+
   const form = new FormData();
   form.append("target", target);
-  form.append("task", document.getElementById("task").value);
-  form.append("features", trainedFeatures.join(","));
-  form.append("test_size", document.getElementById("testSize").value);
-  document.getElementById("metrics").textContent = "Training model...";
+  form.append("task", $("task").value);
+  form.append("features", selectedFeatures.join(","));
+  form.append("test_size", $("testSize").value);
+
+  $("trainBtn").disabled = true;
+  $("metrics").textContent = "Training model... Please wait.";
+  $("prediction").textContent = "";
+
   try {
-    const response = await fetch("/train", {method: "POST", body: form});
+    const response = await fetch("/train", {
+      method: "POST",
+      body: form
+    });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Training failed");
-    document.getElementById("metrics").textContent =
-      "Training successful!\n" + JSON.stringify(data.metrics, null, 2) +
-      `\nSample actual: ${data.sample_actual}\nSample prediction: ${data.sample_prediction}`;
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Training failed.");
+    }
+
+    trainedFeatures = selectedFeatures;
+    trainedTarget = target;
+    isTrained = true;
+
+    const metrics = data.metrics || {};
+    const lines = [
+      "Training successful!",
+      `Target: ${target}`,
+      `Features: ${selectedFeatures.join(", ")}`,
+      `Training rows: ${metrics.train_rows}`,
+      `Testing rows: ${metrics.test_rows}`,
+      "",
+      "Evaluation metrics:"
+    ];
+
+    Object.entries(metrics).forEach(([key, value]) => {
+      if (key !== "task" && key !== "train_rows" && key !== "test_rows") {
+        lines.push(`${key}: ${value}`);
+      }
+    });
+
+    lines.push("");
+    lines.push(`Sample actual: ${data.sample_actual}`);
+    lines.push(`Sample prediction: ${data.sample_prediction}`);
+
+    showSuccess($("metrics"), lines.join("\n"));
     renderPredictionInputs();
+    $("predictBtn").disabled = false;
+
   } catch (error) {
-    document.getElementById("metrics").textContent = "Error: " + error.message;
+    isTrained = false;
+    trainedFeatures = [];
+    trainedTarget = "";
+    $("predictBtn").disabled = true;
+    showError($("metrics"), "Training error: " + error.message);
+  } finally {
+    $("trainBtn").disabled = false;
   }
 }
 
 function renderPredictionInputs() {
-  document.getElementById("predictionInputs").innerHTML = trainedFeatures.map((c, i) =>
-    `<label for="feature${i}">${escapeHTML(c)}</label>
-     <input id="feature${i}" type="text" placeholder="Enter ${escapeHTML(c)}" required>`
-  ).join("");
+  const container = $("predictionInputs");
+  container.innerHTML = "";
+
+  trainedFeatures.forEach((column, index) => {
+    const label = document.createElement("label");
+    label.htmlFor = `feature${index}`;
+    label.textContent = column;
+
+    const input = document.createElement("input");
+    input.id = `feature${index}`;
+    input.type = "text";
+    input.placeholder = `Enter ${column}`;
+    input.autocomplete = "off";
+
+    container.appendChild(label);
+    container.appendChild(input);
+  });
+
+  const note = document.createElement("p");
+  note.className = "note";
+  note.textContent = `Prediction target: ${trainedTarget}`;
+  container.appendChild(note);
 }
 
 async function predictValue() {
-  if (!trainedFeatures.length) {
-    document.getElementById("prediction").textContent = "Train a model first.";
+  if (!isTrained || trainedFeatures.length === 0) {
+    showError($("prediction"), "Please train a model first.");
     return;
   }
+
   const values = {};
-  for (let i = 0; i < trainedFeatures.length; i++) {
-    const raw = document.getElementById("feature" + i).value.trim();
+
+  for (let index = 0; index < trainedFeatures.length; index++) {
+    const column = trainedFeatures[index];
+    const input = $(`feature${index}`);
+    const raw = input.value.trim();
+
     if (raw === "") {
-      document.getElementById("prediction").textContent = "Fill in every feature value.";
+      showError($("prediction"), `Please enter a value for ${column}.`);
+      input.focus();
       return;
     }
-    const num = Number(raw);
-    values[trainedFeatures[i]] = Number.isNaN(num) ? raw : num;
+
+    const numberValue = Number(raw);
+    values[column] = Number.isNaN(numberValue) ? raw : numberValue;
   }
+
+  $("predictBtn").disabled = true;
+  $("prediction").textContent = "Making prediction...";
+
   try {
     const response = await fetch("/predict", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({values})
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ values })
     });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Prediction failed");
-    document.getElementById("prediction").textContent =
-      `Predicted ${data.target}: ${data.prediction}`;
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Prediction failed.");
+    }
+
+    if (data.target !== trainedTarget) {
+      throw new Error(
+        "The server's trained model does not match the current target. Please train the model again."
+      );
+    }
+
+    const result = document.createElement("div");
+    result.className = "result";
+
+    const heading = document.createElement("h3");
+    heading.textContent = `Predicted ${data.target.replaceAll("_", " ")}`;
+
+    const value = document.createElement("p");
+    value.style.fontSize = "24px";
+    value.style.fontWeight = "bold";
+    value.textContent = data.prediction;
+
+    result.appendChild(heading);
+    result.appendChild(value);
+
+    $("prediction").className = "success";
+    $("prediction").replaceChildren(result);
+
   } catch (error) {
-    document.getElementById("prediction").textContent = "Error: " + error.message;
+    showError($("prediction"), "Prediction error: " + error.message);
+  } finally {
+    $("predictBtn").disabled = false;
   }
 }
 </script>
