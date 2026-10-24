@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Performance ML Trainer</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f3f6fc;
+  color: #1f2937;
+}
+header {
+  background: #243b80;
+  color: white;
+  text-align: center;
+  padding: 28px 15px;
+}
+header h1 { margin: 0 0 8px; }
+main { max-width: 950px; margin: 25px auto; padding: 0 15px; }
+.card {
+  background: white;
+  padding: 22px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 3px 14px #0000000d;
+}
+h2 { color: #243b80; margin-top: 0; }
+label { display: block; font-weight: bold; margin: 13px 0 6px; }
+input, select, button {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #ccd3e0;
+  border-radius: 7px;
+  font-size: 15px;
+}
+button {
+  background: #3155b8;
+  color: white;
+  border: 0;
+  cursor: pointer;
+  margin-top: 15px;
+  font-weight: bold;
+}
+button:hover { background: #243b80; }
+#status, #metrics, #prediction { margin-top: 15px; white-space: pre-wrap; }
+.columns { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 15px; }
+#features label { font-weight: normal; margin: 8px 0; }
+#features input { width: auto; margin-right: 8px; }
+table { border-collapse: collapse; width: 100%; margin-top: 12px; display: block; overflow-x: auto; }
+th, td { border: 1px solid #dce2ed; padding: 8px; text-align: left; }
+th { background: #edf1fa; }
+.note { color: #64748b; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Student Performance ML Trainer</h1>
+  <p>Upload your CSV, train a machine learning model, and make predictions.</p>
+</header>
+<main>
+<section class="card">
+  <h2>1. Upload Dataset</h2>
+  <p class="note">Upload a CSV file containing at least two columns and five valid rows.</p>
+  <input type="file" id="csvFile" accept=".csv">
+  <button onclick="uploadCSV()">Upload CSV</button>
+  <div id="status"></div>
+  <div id="preview"></div>
+</section>
+
+<section class="card">
+  <h2>2. Configure and Train Model</h2>
+  <div class="columns">
+    <div>
+      <label for="task">Problem type</label>
+      <select id="task">
+        <option value="regression">Regression (predict numbers)</option>
+        <option value="classification">Classification (predict categories)</option>
+      </select>
+    </div>
+    <div>
+      <label for="target">Target column</label>
+      <select id="target"><option value="">Upload a CSV first</option></select>
+    </div>
+    <div>
+      <label for="testSize">Test data percentage</label>
+      <select id="testSize">
+        <option value="0.2">20% test / 80% train</option>
+        <option value="0.25">25% test / 75% train</option>
+        <option value="0.3">30% test / 70% train</option>
+      </select>
+    </div>
+  </div>
+  <label>Feature columns (input variables)</label>
+  <div id="features">Upload a CSV to select columns.</div>
+  <button onclick="trainModel()">Train Random Forest Model</button>
+  <div id="metrics"></div>
+</section>
+
+<section class="card">
+  <h2>3. Make a Prediction</h2>
+  <p class="note">After training, enter values for each selected feature.</p>
+  <div id="predictionInputs"></div>
+  <button onclick="predictValue()">Predict</button>
+  <div id="prediction"></div>
+</section>
+</main>
+
+<script>
+let columns = [];
+let previewRows = [];
+let trainedFeatures = [];
+
+async function uploadCSV() {
+  const file = document.getElementById("csvFile").files[0];
+  if (!file) {
+    document.getElementById("status").textContent = "Please select a CSV file.";
+    return;
+  }
+  const form = new FormData();
+  form.append("file", file);
+  document.getElementById("status").textContent = "Uploading...";
+  try {
+    const response = await fetch("/upload", {method: "POST", body: form});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Upload failed");
+    columns = data.columns;
+    previewRows = data.preview || [];
+    document.getElementById("status").textContent =
+      `Uploaded: ${data.filename}\nRows: ${data.rows}\nColumns: ${columns.join(", ")}`;
+    document.getElementById("target").innerHTML = columns.map(
+      c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`
+    ).join("");
+    renderFeatures();
+    renderPreview();
+  } catch (error) {
+    document.getElementById("status").textContent = "Error: " + error.message;
+  }
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[c]);
+}
+
+function renderFeatures() {
+  const target = document.getElementById("target").value;
+  document.getElementById("features").innerHTML = columns.map(c =>
+    `<label><input type="checkbox" value="${escapeHTML(c)}"
+      ${c !== target ? "checked" : ""}
+      ${c === target ? "disabled" : ""}>${escapeHTML(c)}</label>`
+  ).join("");
+}
+
+document.getElementById("target").addEventListener("change", renderFeatures);
+
+function renderPreview() {
+  if (!previewRows.length) return;
+  const heads = columns.map(c => `<th>${escapeHTML(c)}</th>`).join("");
+  const rows = previewRows.map(row =>
+    "<tr>" + columns.map(c => `<td>${escapeHTML(row[c] ?? "")}</td>`).join("") + "</tr>"
+  ).join("");
+  document.getElementById("preview").innerHTML =
+    `<h3>First ${previewRows.length} rows</h3><table><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function trainModel() {
+  const target = document.getElementById("target").value;
+  trainedFeatures = [...document.querySelectorAll("#features input:checked")].map(x => x.value);
+  if (!target || !trainedFeatures.length) {
+    document.getElementById("metrics").textContent = "Select a target and at least one feature.";
+    return;
+  }
+  const form = new FormData();
+  form.append("target", target);
+  form.append("task", document.getElementById("task").value);
+  form.append("features", trainedFeatures.join(","));
+  form.append("test_size", document.getElementById("testSize").value);
+  document.getElementById("metrics").textContent = "Training model...";
+  try {
+    const response = await fetch("/train", {method: "POST", body: form});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Training failed");
+    document.getElementById("metrics").textContent =
+      "Training successful!\n" + JSON.stringify(data.metrics, null, 2) +
+      `\nSample actual: ${data.sample_actual}\nSample prediction: ${data.sample_prediction}`;
+    renderPredictionInputs();
+  } catch (error) {
+    document.getElementById("metrics").textContent = "Error: " + error.message;
+  }
+}
+
+function renderPredictionInputs() {
+  document.getElementById("predictionInputs").innerHTML = trainedFeatures.map((c, i) =>
+    `<label for="feature${i}">${escapeHTML(c)}</label>
+     <input id="feature${i}" type="text" placeholder="Enter ${escapeHTML(c)}" required>`
+  ).join("");
+}
+
+async function predictValue() {
+  if (!trainedFeatures.length) {
+    document.getElementById("prediction").textContent = "Train a model first.";
+    return;
+  }
+  const values = {};
+  for (let i = 0; i < trainedFeatures.length; i++) {
+    const raw = document.getElementById("feature" + i).value.trim();
+    if (raw === "") {
+      document.getElementById("prediction").textContent = "Fill in every feature value.";
+      return;
+    }
+    const num = Number(raw);
+    values[trainedFeatures[i]] = Number.isNaN(num) ? raw : num;
+  }
+  try {
+    const response = await fetch("/predict", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({values})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Prediction failed");
+    document.getElementById("prediction").textContent =
+      `Predicted ${data.target}: ${data.prediction}`;
+  } catch (error) {
+    document.getElementById("prediction").textContent = "Error: " + error.message;
+  }
+}
+</script>
+</body>
+</html>
